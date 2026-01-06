@@ -4,3 +4,4 @@ python-dotenv
 matplotlib
 urllib3==1.26.18
 six==1.17.0
+flask
