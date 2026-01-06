@@ -22,7 +22,7 @@ from ai import analyze_week
 
 # ──────────────── Команды ────────────────
 
-def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def start(update, context):
     # сохраняем chat_id
     update_memory("chat_id", update.message.chat_id)
 
@@ -32,11 +32,11 @@ def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
    	 reply_markup=main_keyboard())
 
 
-def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def day(update, context):
     update.message.reply_text(daily_summary())
 
 
-def sleep(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def sleep(update, context):
     if not context.args:
         update.message.reply_text("Используй: /sleep 7")
         return
@@ -44,7 +44,7 @@ def sleep(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update.message.reply_text(f"😴 Сон сохранён: {context.args[0]} ч")
 
 
-def energy(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def energy(update, context):
     if not context.args:
         update.message.reply_text("Используй: /energy 8")
         return
@@ -52,7 +52,7 @@ def energy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update.message.reply_text(f"⚡ Энергия сохранена: {context.args[0]}/10")
 
 
-def training(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def training(update, context):
     if not context.args:
         update.message.reply_text("Используй: /training зал ноги")
         return
@@ -61,7 +61,7 @@ def training(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update.message.reply_text(f"🏋️ Тренировка записана: {text}")
 
 
-def memory_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def memory_status(update, context):
     memory = get_memory()
     if not memory:
         update.message.reply_text("Память пока пустая")
@@ -72,14 +72,14 @@ def memory_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ──────────────── AI чат ────────────────
 
-def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def ai_chat(update, context):
     reply = ask_ai(update.message.text)
     update.message.reply_text(reply)
 
 
 # ──────────────── Авто-сообщения ────────────────
 
-def morning_job(context: ContextTypes.DEFAULT_TYPE):
+def morning_job(update, context):
     memory = get_memory()
     chat_id = memory.get("chat_id")
     if not chat_id:
@@ -91,7 +91,7 @@ def morning_job(context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-def evening_job(context: ContextTypes.DEFAULT_TYPE):
+def evening_job(update, context):
     memory = get_memory()
     chat_id = memory.get("chat_id")
     if not chat_id:
@@ -218,7 +218,7 @@ def weekly_report():
 
     return text
 
-def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def button_handler(update, context):
     query = update.callback_query
     query.answer()
 
