@@ -270,11 +270,11 @@ def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if sleep:
             with open(sleep, "rb") as f:
-                await context.bot.send_photo(chat_id=chat_id, photo=f)
+                context.bot.send_photo(chat_id=chat_id, photo=f)
 
         if energy:
             with open(energy, "rb") as f:
-                await context.bot.send_photo(chat_id=chat_id, photo=f)
+                context.bot.send_photo(chat_id=chat_id, photo=f)
 
     else:
         context.bot.send_message(
