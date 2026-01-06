@@ -22,82 +22,82 @@ from ai import analyze_week
 
 # ──────────────── Команды ────────────────
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # сохраняем chat_id
     update_memory("chat_id", update.message.chat_id)
 
-    await update.message.reply_text(
+    update.message.reply_text(
         "Привет! Я твой AI-ассистент по здоровью 💪\n\n"
    	 "Выбирай действие:",
    	 reply_markup=main_keyboard())
 
 
-async def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(daily_summary())
+def day(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    update.message.reply_text(daily_summary())
 
 
-async def sleep(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def sleep(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        await update.message.reply_text("Используй: /sleep 7")
+        update.message.reply_text("Используй: /sleep 7")
         return
     update_memory("sleep_hours", context.args[0])
-    await update.message.reply_text(f"😴 Сон сохранён: {context.args[0]} ч")
+    update.message.reply_text(f"😴 Сон сохранён: {context.args[0]} ч")
 
 
-async def energy(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def energy(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        await update.message.reply_text("Используй: /energy 8")
+        update.message.reply_text("Используй: /energy 8")
         return
     update_memory("energy_level", context.args[0])
-    await update.message.reply_text(f"⚡ Энергия сохранена: {context.args[0]}/10")
+    update.message.reply_text(f"⚡ Энергия сохранена: {context.args[0]}/10")
 
 
-async def training(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def training(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
-        await update.message.reply_text("Используй: /training зал ноги")
+        update.message.reply_text("Используй: /training зал ноги")
         return
     text = " ".join(context.args)
     update_memory("last_training", text)
-    await update.message.reply_text(f"🏋️ Тренировка записана: {text}")
+    update.message.reply_text(f"🏋️ Тренировка записана: {text}")
 
 
-async def memory_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def memory_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     memory = get_memory()
     if not memory:
-        await update.message.reply_text("Память пока пустая")
+        update.message.reply_text("Память пока пустая")
     else:
         text = "\n".join([f"{k}: {v}" for k, v in memory.items()])
-        await update.message.reply_text(f"📊 Текущая память:\n{text}")
+        update.message.reply_text(f"📊 Текущая память:\n{text}")
 
 
 # ──────────────── AI чат ────────────────
 
-async def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply = ask_ai(update.message.text)
-    await update.message.reply_text(reply)
+    update.message.reply_text(reply)
 
 
 # ──────────────── Авто-сообщения ────────────────
 
-async def morning_job(context: ContextTypes.DEFAULT_TYPE):
+def morning_job(context: ContextTypes.DEFAULT_TYPE):
     memory = get_memory()
     chat_id = memory.get("chat_id")
     if not chat_id:
         return
 
-    await context.bot.send_message(
+    context.bot.send_message(
         chat_id=chat_id,
         text="🌅 Доброе утро!\nКак самочувствие? Напиши пару слов — подстрою день 💪"
     )
 
 
-async def evening_job(context: ContextTypes.DEFAULT_TYPE):
+def evening_job(context: ContextTypes.DEFAULT_TYPE):
     memory = get_memory()
     chat_id = memory.get("chat_id")
     if not chat_id:
         return
 
-    await context.bot.send_message(
+    context.bot.send_message(
         chat_id=chat_id,
         text="🌙 Как прошёл день?\nЭнергия? Во сколько планируешь лечь спать?"
     )
@@ -218,15 +218,15 @@ def weekly_report():
 
     return text
 
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
+    query.answer()
 
     chat_id = query.message.chat_id
 
     if query.data == "today_training":
         text = ask_ai("Что мне сегодня делать с тренировкой?")
-        await context.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text=text,
             reply_markup=main_keyboard()
@@ -234,7 +234,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "nutrition":
         text = ask_ai("Что мне сегодня есть?")
-        await context.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text=text,
             reply_markup=main_keyboard()
@@ -242,7 +242,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "sleep_help":
         text = ask_ai("Как улучшить сон сегодня?")
-        await context.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text=text,
             reply_markup=main_keyboard()
@@ -250,7 +250,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data == "week_report":
         text = weekly_report()
-        await context.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text=text,
             reply_markup=main_keyboard()
@@ -261,7 +261,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         energy = energy_chart()
 
         if not sleep and not energy:
-            await context.bot.send_message(
+            context.bot.send_message(
                 chat_id=chat_id,
                 text="Недостаточно данных для графиков 📉",
                 reply_markup=main_keyboard()
@@ -277,7 +277,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.send_photo(chat_id=chat_id, photo=f)
 
     else:
-        await context.bot.send_message(
+        context.bot.send_message(
             chat_id=chat_id,
             text="Неизвестная кнопка",
             reply_markup=main_keyboard()
