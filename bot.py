@@ -8,6 +8,9 @@ from telegram.ext import (
 )
 
 from datetime import time, date, timedelta
+import threading
+import os
+from flask import Flask
 
 from config import TELEGRAM_TOKEN
 from logic import daily_summary
@@ -135,7 +138,6 @@ def weekly_report():
             trainings.append(item["last_training"])
 
     text = "📊 Недельный отчёт\n\n"
-
     text += f"😴 Сон: {round(sum(sleep)/len(sleep),1) if sleep else 'нет данных'}\n"
     text += f"⚡ Энергия: {round(sum(energy)/len(energy),1) if energy else 'нет данных'}\n"
     text += f"🏋️ Тренировок: {len(trainings)}\n"
@@ -180,7 +182,7 @@ def button_handler(update, context):
     context.bot.send_message(chat_id, text, reply_markup=main_keyboard())
 
 
-# ──────────────── Запуск ────────────────
+# ──────────────── Запуск бота ────────────────
 
 def main():
     print("🤖 Бот запускается...")
@@ -205,12 +207,7 @@ def main():
     updater.idle()
 
 
-from flask import Flask
-import threading
-import os
-
-def run_bot():
-    main()
+# ──────────────── Flask для Render ────────────────
 
 def run_server():
     app = Flask(__name__)
@@ -222,28 +219,7 @@ def run_server():
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
-if __name__ == "__main__":
-    threading.Thread(target=run_bot).start()
-    run_server()
- 
-from flask import Flask
-import threading
-import os
-
-def run_bot():
-    main()
-
-def run_server():
-    app = Flask(__name__)
-
-    @app.route("/")
-    def home():
-        return "Bot is running"
-
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    threading.Thread(target=run_bot).start()
+    threading.Thread(target=main).start()
     run_server()
-   main()
