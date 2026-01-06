@@ -108,31 +108,20 @@ async def evening_job(context: ContextTypes.DEFAULT_TYPE):
 def main():
     print("🤖 Бот запускается с AI, памятью и авто-сообщениями...")
 
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    updater = Updater(token=TELEGRAM_TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    # команды
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("day", day))
-    app.add_handler(CommandHandler("sleep", sleep))
-    app.add_handler(CommandHandler("energy", energy))
-    app.add_handler(CommandHandler("training", training))
-    app.add_handler(CommandHandler("memory", memory_status))
-    
-    app.add_handler(CallbackQueryHandler(button_handler))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("day", day))
+    dp.add_handler(CommandHandler("sleep", sleep))
+    dp.add_handler(CommandHandler("energy", energy))
+    dp.add_handler(CommandHandler("training", training))
 
-    # обычный текст → AI
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, ai_chat))
+    dp.add_handler(CallbackQueryHandler(button_handler))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, ai_chat))
 
-    # 🔔 авто-сообщения через JobQueue
-    app.job_queue.run_daily(morning_job, time(hour=8, minute=0))
-    app.job_queue.run_daily(evening_job, time(hour=21, minute=30))
-
-    # 👇 ТЕСТ
-    # print("⏱ JobQueue test scheduled")
-    # app.job_queue.run_once(morning_job, when=5)
-
-    print("✅ Бот запущен и ждёт сообщений")
-    app.run_polling()
+    updater.start_polling()
+    updater.idle()
 
 def main_keyboard():
     keyboard = [
