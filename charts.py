@@ -1,71 +1,50 @@
 import matplotlib.pyplot as plt
-from datetime import date, timedelta
 from memory import get_memory
 
-
-def _last_7_days_data(key):
-    memory = get_memory()
+def sleep_chart(user_id):
+    memory = get_memory(user_id)
     history = memory.get("history", [])
 
-    days = []
-    values = []
-
-    week_start = date.today() - timedelta(days=6)
-
-    for item in history:
-        try:
-            d = date.fromisoformat(item.get("date"))
-        except Exception:
-            continue
-
-        if d < week_start:
-            continue
-
-        if key in item:
-            try:
-                days.append(d.strftime("%d.%m"))
-                values.append(float(item[key]))
-            except Exception:
-                pass
-
-    return days, values
-
-
-def sleep_chart():
-    days, values = _last_7_days_data("sleep_hours")
+    dates, values = [], []
+    for h in history:
+        if "sleep_hours" in h:
+            dates.append(h["date"])
+            values.append(float(h["sleep_hours"]))
 
     if not values:
         return None
 
     plt.figure()
-    plt.plot(days, values, marker="o")
+    plt.plot(dates, values)
     plt.title("Сон (часы)")
-    plt.xlabel("День")
-    plt.ylabel("Часы сна")
-    plt.ylim(0, 10)
-    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
 
-    path = "sleep_chart.png"
+    path = f"sleep_{user_id}.png"
     plt.savefig(path)
     plt.close()
     return path
 
+def energy_chart(user_id):
+    memory = get_memory(user_id)
+    history = memory.get("history", [])
 
-def energy_chart():
-    days, values = _last_7_days_data("energy_level")
+    dates, values = [], []
+    for h in history:
+        if "energy_level" in h:
+            dates.append(h["date"])
+            values.append(int(h["energy_level"]))
 
     if not values:
         return None
 
     plt.figure()
-    plt.plot(days, values, marker="o")
+    plt.plot(dates, values)
     plt.title("Энергия")
-    plt.xlabel("День")
-    plt.ylabel("Уровень (1–10)")
-    plt.ylim(0, 10)
-    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
 
-    path = "energy_chart.png"
+    path = f"energy_{user_id}.png"
     plt.savefig(path)
     plt.close()
     return path
