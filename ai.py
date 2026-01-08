@@ -6,7 +6,14 @@ AI_ENABLED = bool(OPENAI_API_KEY)
 
 print("🤖 AI ENABLED:", AI_ENABLED)
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+_client = None
+
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=OPENAI_API_KEY)
+    return _client
 
 
 def ask_ai(prompt: str) -> str:
@@ -14,6 +21,7 @@ def ask_ai(prompt: str) -> str:
         return "AI временно отключён"
 
     try:
+        client = get_client()
         r = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
