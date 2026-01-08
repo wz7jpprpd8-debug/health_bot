@@ -71,8 +71,14 @@ def chat(update, context):
 
 def buttons(update: Update, context):
     q = update.callback_query
-    q.answer()
+
+    try:
+        q.answer()
+    except:
+        pass  # важно: не падаем, если запрос устарел
+
     uid = q.from_user.id
+    chat_id = q.message.chat_id
 
     if q.data == "week":
         text = daily_summary(uid)
@@ -82,19 +88,17 @@ def buttons(update: Update, context):
         e = energy_chart(uid)
 
         if s:
-            context.bot.send_photo(q.message.chat_id, open(s, "rb"))
+            context.bot.send_photo(chat_id, open(s, "rb"))
         if e:
-            context.bot.send_photo(q.message.chat_id, open(e, "rb"))
+            context.bot.send_photo(chat_id, open(e, "rb"))
+
+        context.bot.send_message(chat_id, "Что дальше?", reply_markup=keyboard())
         return
 
     else:
         text = ask_ai("Дай совет по " + q.data)
 
-    context.bot.send_message(
-        q.message.chat_id,
-        text,
-        reply_markup=keyboard()
-    )
+    context.bot.send_message(chat_id, text, reply_markup=keyboard())
 
 # ──────────────── ЗАПУСК ────────────────
 
