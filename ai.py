@@ -1,25 +1,25 @@
-print("AI ENABLED:", AI_ENABLED)
-
 import os
 from openai import OpenAI
-from config import OPENAI_API_KEY
 
-# Флаг: включён ли AI
+# ──────────────── НАСТРОЙКИ ────────────────
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
 AI_ENABLED = bool(OPENAI_API_KEY)
 
-# Инициализация клиента (ТОЛЬКО если есть ключ)
-client = OpenAI(api_key=OPENAI_API_KEY) if AI_ENABLED else None
+print("🤖 AI ENABLED:", AI_ENABLED)
+
+if AI_ENABLED:
+    client = OpenAI(api_key=OPENAI_API_KEY)
+else:
+    client = None
 
 
-def ask_ai(user_text: str) -> str:
-    """
-    Ответ AI на сообщение пользователя
-    """
+# ──────────────── AI ОТВЕТ ────────────────
+
+def ask_ai(prompt: str) -> str:
     if not AI_ENABLED:
-        return (
-            "🤖 AI временно недоступен.\n\n"
-            "Ты можешь пользоваться трекером сна, энергии, тренировок и отчётами."
-        )
+        return "🤖 AI временно отключён"
 
     try:
         response = client.chat.completions.create(
@@ -27,12 +27,12 @@ def ask_ai(user_text: str) -> str:
             messages=[
                 {
                     "role": "system",
-                    "content": (
-                        "Ты персональный ассистент по здоровью. "
-                        "Давай короткие, практичные и мотивирующие советы."
-                    )
+                    "content": "Ты персональный ассистент по здоровью. Отвечай кратко и по делу."
                 },
-                {"role": "user", "content": user_text}
+                {
+                    "role": "user",
+                    "content": prompt
+                }
             ],
             temperature=0.7,
             max_tokens=300
@@ -42,15 +42,14 @@ def ask_ai(user_text: str) -> str:
 
     except Exception as e:
         print("AI ERROR:", e)
-        return "⚠️ Ошибка AI. Попробуй позже."
+        return "🤖 Ошибка AI. Попробуй позже."
 
 
-def analyze_week(summary_text: str) -> str:
-    """
-    AI-анализ недельного отчёта
-    """
+# ──────────────── AI АНАЛИЗ НЕДЕЛИ ────────────────
+
+def analyze_week(text: str) -> str:
     if not AI_ENABLED:
-        return "AI-анализ отключён (нет ключа OpenAI)."
+        return "AI-анализ отключён"
 
     try:
         response = client.chat.completions.create(
@@ -58,19 +57,19 @@ def analyze_week(summary_text: str) -> str:
             messages=[
                 {
                     "role": "system",
-                    "content": (
-                        "Ты эксперт по здоровью и восстановлению. "
-                        "Проанализируй отчёт и дай рекомендации."
-                    )
+                    "content": "Ты аналитик здоровья. Дай краткий вывод и рекомендации."
                 },
-                {"role": "user", "content": summary_text}
+                {
+                    "role": "user",
+                    "content": text
+                }
             ],
             temperature=0.6,
-            max_tokens=400
+            max_tokens=250
         )
 
         return response.choices[0].message.content.strip()
 
     except Exception as e:
         print("AI WEEK ERROR:", e)
-        return "⚠️ AI-анализ недели недоступен."
+        return "Не удалось выполнить AI-анализ."
