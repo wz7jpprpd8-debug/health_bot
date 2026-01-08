@@ -72,50 +72,29 @@ def chat(update, context):
 def buttons(update: Update, context):
     q = update.callback_query
     q.answer()
-
     uid = q.from_user.id
-    chat_id = q.message.chat_id
-
-    print("CALLBACK:", q.data)  # ← лог для Railway
 
     if q.data == "week":
-        text = daily_summary()
-        try:
-            text += "\n\n🤖 AI-анализ:\n" + analyze_week(text)
-        except Exception:
-            pass
-
-        context.bot.send_message(chat_id, text, reply_markup=keyboard())
+        text = daily_summary(uid)
 
     elif q.data == "charts":
-        sleep_img = sleep_chart(uid)
-        energy_img = energy_chart(uid)
+        s = sleep_chart(uid)
+        e = energy_chart(uid)
 
-        if not sleep_img and not energy_img:
-            context.bot.send_message(
-                chat_id,
-                "📉 Недостаточно данных для графиков",
-                reply_markup=keyboard()
-            )
-            return
-
-        if sleep_img:
-            with open(sleep_img, "rb") as f:
-                context.bot.send_photo(chat_id, f)
-
-        if energy_img:
-            with open(energy_img, "rb") as f:
-                context.bot.send_photo(chat_id, f)
-
-        context.bot.send_message(chat_id, "Что дальше?", reply_markup=keyboard())
+        if s:
+            context.bot.send_photo(q.message.chat_id, open(s, "rb"))
+        if e:
+            context.bot.send_photo(q.message.chat_id, open(e, "rb"))
+        return
 
     else:
-        try:
-            text = ask_ai(f"Дай совет по теме: {q.data}")
-        except Exception:
-            text = "🤖 AI временно недоступен"
+        text = ask_ai("Дай совет по " + q.data)
 
-        context.bot.send_message(chat_id, text, reply_markup=keyboard())
+    context.bot.send_message(
+        q.message.chat_id,
+        text,
+        reply_markup=keyboard()
+    )
 
 # ──────────────── ЗАПУСК ────────────────
 
