@@ -1,84 +1,83 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from flask import Flask, request
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Updater,
+    Dispatcher,
     CommandHandler,
     MessageHandler,
-    Filters,
     CallbackQueryHandler,
+    Filters,
 )
+from telegram import Bot
 
 from config import TELEGRAM_TOKEN
+from ai import ask_ai
 from memory import update_memory, get_memory
-from ai import ask_ai, analyze_week
 from charts import sleep_chart, energy_chart
 from logic import daily_summary
 
-# ──────────────── КЛАВИАТУРА ────────────────
+import os
+
+# ─────────────────────────────────────────
+# BOT + FLASK
+# ─────────────────────────────────────────
+
+app = Flask(__name__)
+bot = Bot(token=TELEGRAM_TOKEN)
+dispatcher = Dispatcher(bot=bot, update_queue=None, workers=1, use_context=True)
+
+# ─────────────────────────────────────────
+# KEYBOARD
+# ─────────────────────────────────────────
 
 def keyboard():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("🏋️ Тренировка", callback_data="training")],
         [InlineKeyboardButton("🍽 Питание", callback_data="nutrition")],
-        [InlineKeyboardButton("😴 Сон", callback_data="sleep_help")],
+        [InlineKeyboardButton("😴 Сон", callback_data="sleep")],
         [InlineKeyboardButton("📊 Неделя", callback_data="week")],
         [InlineKeyboardButton("📈 Графики", callback_data="charts")],
     ])
 
-# ──────────────── КОМАНДЫ ────────────────
+# ─────────────────────────────────────────
+# COMMANDS
+# ─────────────────────────────────────────
 
 def start(update, context):
     update.message.reply_text(
-        "Привет! Я AI-ассистент по здоровью 💪\nВыбирай действие:",
+        "Привет! Я AI-ассистент по здоровью 💪",
         reply_markup=keyboard()
     )
 
-def sleep(update, context):
+def sleep_cmd(update, context):
     if not context.args:
         update.message.reply_text("Пример: /sleep 7")
         return
-
     update_memory(update.effective_user.id, "sleep_hours", context.args[0])
     update.message.reply_text("😴 Сон сохранён")
 
-def energy(update, context):
+def energy_cmd(update, context):
     if not context.args:
         update.message.reply_text("Пример: /energy 8")
         return
-
     update_memory(update.effective_user.id, "energy_level", context.args[0])
     update.message.reply_text("⚡ Энергия сохранена")
 
-def training(update, context):
-    if not context.args:
-        update.message.reply_text("Пример: /training зал ноги")
-        return
-
+def training_cmd(update, context):
     text = " ".join(context.args)
     update_memory(update.effective_user.id, "last_training", text)
     update.message.reply_text("🏋️ Тренировка записана")
 
-# ──────────────── AI ЧАТ ────────────────
-
 def chat(update, context):
-    try:
-        reply = ask_ai(update.message.text)
-    except Exception:
-        reply = "🤖 AI временно недоступен"
+    update.message.reply_text(ask_ai(update.message.text))
 
-    update.message.reply_text(reply)
+# ─────────────────────────────────────────
+# CALLBACK BUTTONS
+# ─────────────────────────────────────────
 
-# ──────────────── КНОПКИ ────────────────
-
-def buttons(update: Update, context):
+def buttons(update, context):
     q = update.callback_query
-
-    try:
-        q.answer()
-    except:
-        pass  # важно: не падаем, если запрос устарел
-
+    q.answer()
     uid = q.from_user.id
-    chat_id = q.message.chat_id
 
     if q.data == "week":
         text = daily_summary(uid)
@@ -86,38 +85,50 @@ def buttons(update: Update, context):
     elif q.data == "charts":
         s = sleep_chart(uid)
         e = energy_chart(uid)
-
         if s:
-            context.bot.send_photo(chat_id, open(s, "rb"))
+            context.bot.send_photo(q.message.chat_id, open(s, "rb"))
         if e:
-            context.bot.send_photo(chat_id, open(e, "rb"))
-
-        context.bot.send_message(chat_id, "Что дальше?", reply_markup=keyboard())
+            context.bot.send_photo(q.message.chat_id, open(e, "rb"))
         return
 
     else:
-        text = ask_ai("Дай совет по " + q.data)
+        text = ask_ai(f"Дай совет по теме: {q.data}")
 
-    context.bot.send_message(chat_id, text, reply_markup=keyboard())
+    context.bot.send_message(
+        q.message.chat_id,
+        text,
+        reply_markup=keyboard()
+    )
 
-# ──────────────── ЗАПУСК ────────────────
+# ─────────────────────────────────────────
+# DISPATCHER
+# ─────────────────────────────────────────
 
-def main():
-    print("🤖 Bot started (Railway)")
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(CommandHandler("sleep", sleep_cmd))
+dispatcher.add_handler(CommandHandler("energy", energy_cmd))
+dispatcher.add_handler(CommandHandler("training", training_cmd))
+dispatcher.add_handler(CallbackQueryHandler(buttons))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, chat))
 
-    updater = Updater(TELEGRAM_TOKEN, use_context=True)
-    dp = updater.dispatcher
+# ─────────────────────────────────────────
+# WEBHOOK ENDPOINT
+# ─────────────────────────────────────────
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("sleep", sleep))
-    dp.add_handler(CommandHandler("energy", energy))
-    dp.add_handler(CommandHandler("training", training))
+@app.route("/webhook", methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), bot)
+    dispatcher.process_update(update)
+    return "ok"
 
-    dp.add_handler(CallbackQueryHandler(buttons))  # ← ВАЖНО: ДО MessageHandler
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, chat))
+@app.route("/")
+def home():
+    return "Bot is running"
 
-    updater.start_polling()
-    updater.idle()
+# ─────────────────────────────────────────
+# START
+# ─────────────────────────────────────────
 
 if __name__ == "__main__":
-    main()
+    print("🤖 Bot started (Webhook mode)")
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
